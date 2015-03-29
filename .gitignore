@@ -1,0 +1,15 @@
+[Oo]bj
+[Bb]in
+Components/
+packages/
+*.user
+*.userprefs
+*.suo
+*.[Cc]ache
+*.cachefile
+*.bak
+*.log
+*.ncb
+*.DS_Store
+[Tt]humbs.db
+/tools/FAKE
