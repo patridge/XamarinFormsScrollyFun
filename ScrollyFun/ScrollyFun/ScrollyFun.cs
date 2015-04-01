@@ -1,6 +1,9 @@
 ﻿using System;
-
+using System.Collections.Generic;
+using System.Linq;
+using System.Drawing;
 using Xamarin.Forms;
+using Color = Xamarin.Forms.Color;
 
 namespace ScrollyFun
 {
@@ -8,34 +11,14 @@ namespace ScrollyFun
 	{
 		public App ()
 		{
-			// The root page of your application
-			MainPage = new ContentPage {
-				Content = new StackLayout {
-					VerticalOptions = LayoutOptions.Center,
-					Children = {
-						new Label {
-							XAlign = TextAlignment.Center,
-							Text = "Welcome to Xamarin Forms!"
-						}
-					}
-				}
+			var touchesContentPage = new TouchesContentPage {
+				BackgroundColor = Color.Aqua,
 			};
-		}
-
-		protected override void OnStart ()
-		{
-			// Handle when your app starts
-		}
-
-		protected override void OnSleep ()
-		{
-			// Handle when your app sleeps
-		}
-
-		protected override void OnResume ()
-		{
-			// Handle when your app resumes
+			touchesContentPage.OnTouchesMoved += (object sender, IEnumerable<IdentifiedTouch> e) => {
+				System.Diagnostics.Debug.WriteLine(e.Count());
+				System.Diagnostics.Debug.WriteLine(string.Join("\n", e.Select(t => t.Location).ToArray()));
+			};
+			MainPage = touchesContentPage;
 		}
 	}
 }
-
