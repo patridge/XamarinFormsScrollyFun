@@ -10,11 +10,20 @@ namespace ScrollyFun
 {
 	public class App : Application
 	{
+		//foreach (var wordLabel in affectedWordLabels) {
+		// if at 0
+		//   if left of center, flag to move left
+		//   if right of center (or center exactly), flag to move right
+		// move to side until 0/width, then start moving down (possibly rotate)
+		//   (could also animate drop off screen at this point)
+		// move down until height, then start moving back in to stack
+		// (once stacked, possibly recycle at end of text)
+		//}
+		// TODO: try flipping upside down and making lighter from top to "roll over and behind".
 		public class MovableLabel : Label {
 			public Rectangle OriginalPosition { get; set; }
 			public bool MovingFunky { get; set; }
 			public Point CalculateNewPosition(Rectangle parentBounds, double yDelta) {
-				// TODO: try flipping upside down and making lighter from top to "roll over and behind".
 				double newTop;
 				double newLeft = Bounds.Left;
 				if (!MovingFunky) {
@@ -53,15 +62,6 @@ namespace ScrollyFun
 				//					// TODO: Reverse everything
 				//				}
 
-				//foreach (var wordLabel in affectedWordLabels) {
-				// if at 0
-				//   if left of center, flag to move left
-				//   if right of center (or center exactly), flag to move right
-				// move to side until 0/width, then start moving down (possibly rotate)
-				//   (could also animate drop off screen at this point)
-				// move down until height, then start moving back in to stack
-				// (once stacked, possibly recycle at end of text)
-				//}
 			}
 		}
 
