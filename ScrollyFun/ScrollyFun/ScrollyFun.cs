@@ -5,9 +5,16 @@ using Xamarin.Forms;
 using Color = Xamarin.Forms.Color;
 using Point = Xamarin.Forms.Point;
 using Rectangle = Xamarin.Forms.Rectangle;
+using System.Collections.Generic;
 
 namespace ScrollyFun
 {
+	public class MoveDetails {
+		public Rectangle ParentBounds { get; set; }
+		public Rectangle CurrentBounds { get; set; }
+		public int MoveIndex { get; set; }
+		public SizeF DeltaMovement { get; set; }
+	}
 	public class App : Application
 	{
 		//foreach (var wordLabel in affectedWordLabels) {
@@ -21,47 +28,24 @@ namespace ScrollyFun
 		//}
 		// TODO: try flipping upside down and making lighter from top to "roll over and behind".
 		public class MovableLabel : Label {
-			public Rectangle OriginalPosition { get; set; }
-			public bool MovingFunky { get; set; }
-			public Point CalculateNewPosition(Rectangle parentBounds, double yDelta) {
-				double newTop;
-				double newLeft = Bounds.Left;
-				if (!MovingFunky) {
-					newTop = Bounds.Top + yDelta;
-					if (newTop < 0) {
-						MovingFunky = true;
-						newLeft -= -newTop;
-						newTop = 0;
-						if (newLeft < 0) {
-							newTop -= -newLeft;
-							newLeft = 0;
-						}
-					}
-				} else {
-					newTop = Bounds.Top - yDelta;
-				}
+			int moveIndex = 0;
 
-				var newLocation = new Point (newLeft, newTop);
-				return newLocation;
+			/// <summary>
+			/// A no-op move that never finishes (returns false to indicate it is not finished).
+			/// </summary>
+			static Func<MoveDetails, MoveDetails> NoMove = (moveDetails) => {
+				return moveDetails;
+			};
 
-
-				//				if (y > 0) {
-				//					// Scrolling content up
-				//					var newlyAffectedWordLabels = wordLabels.Where(label => !label.MovingFunky && label.Y <= 0);
-				//					foreach (var newlyAffectedWordLabel in newlyAffectedWordLabels) {
-				//						var newBounds = newlyAffectedWordLabel.Bounds;
-				//						newBounds.Top = 0;
-				//						AbsoluteLayout.SetLayoutBounds(newlyAffectedWordLabel, newBounds);
-				//						newlyAffectedWordLabel.MovingFunky = true;
-				//					}
-				//					//					var movingWordLabels = wordLabels.Where(label => label.MovingFunky);
-				//
-				//				}
-				//				else {
-				//					// Scrolling content down
-				//					// TODO: Reverse everything
-				//				}
-
+			public MovableLabel(Func<MoveDetails, MoveDetails> mover) {
+				Mover = mover ?? NoMove;
+			}
+			protected Func<MoveDetails, MoveDetails> Mover { get; set; }
+			public MoveDetails CalculateNewPosition(MoveDetails moveDetails) {
+				moveDetails.MoveIndex = moveIndex;
+				var newMoveDetails = Mover (moveDetails);
+				moveIndex = newMoveDetails.MoveIndex;
+				return newMoveDetails;
 			}
 		}
 
@@ -70,7 +54,78 @@ namespace ScrollyFun
 		{
 			// Sample text from Treasure Island (Stevenson, 1894).
 			var sampleText = "SQUIRE TRELAWNEY, Dr. Livesey, and the rest of these gentlemen having asked me to write down the whole particulars about Treasure Island, from the beginning to the end, keeping nothing back but the bearings of the island, and that only because there is still treasure not yet lifted, I take up my pen in the year of grace 17__ and go back to the time when my father kept the Admiral Benbow inn and the brown old seaman with the sabre cut first took up his lodging under our roof.";
-			var wordLabels = sampleText.Split (new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select (word => new MovableLabel { Text = word }).ToList ();
+			Func<MoveDetails, MoveDetails> doSomeFunMoving = (moveDetails) => {
+				double moveDelta = (moveDetails.DeltaMovement.Height < 0 ? moveDetails.DeltaMovement.Height : 0.0); // currently only move for up panning
+				Point location;
+				float width = (float)moveDetails.CurrentBounds.Width;
+				SizeF remainingDelta;
+				Rectangle bounds;
+				while (moveDetails.DeltaMovement != SizeF.Empty) {
+					bounds = moveDetails.CurrentBounds;
+					location = bounds.Location;
+					remainingDelta = moveDetails.DeltaMovement;
+					switch (moveDetails.MoveIndex) {
+					case 0:
+						location.Y += moveDelta;
+						if (location.Y < 0) {
+							// Overshot destination; put the rest back; move on.
+							remainingDelta.Height = (float)location.Y;
+							location.Y = 0;
+							moveDetails.MoveIndex += 1;
+						}
+						else {
+							remainingDelta = SizeF.Empty;
+						}
+						break;
+					case 1:
+						var right = bounds.Right;
+						var left = bounds.Left;
+						var parentCenter = moveDetails.ParentBounds.Center.X;
+						bool moveLeft = right < parentCenter || (parentCenter - left > right - parentCenter);
+						if (moveLeft) {
+							location.X += moveDelta;
+						} else {
+							location.X -= moveDelta;
+						}
+						if (location.X < 0 || location.X + width > moveDetails.ParentBounds.Right) {
+							// Overshot destination; put the rest back; move on.
+							if (location.X < 0) {
+								remainingDelta.Height = (float)location.X;
+								location.X = 0;
+							} else {
+								remainingDelta.Height = (float)moveDetails.ParentBounds.Right - width - (float)location.X;
+								location.X = moveDetails.ParentBounds.Right - width;
+							}
+							moveDetails.DeltaMovement = remainingDelta;
+							moveDetails.MoveIndex += 1;
+						}
+						else {
+							remainingDelta = SizeF.Empty;
+						}
+						break;
+					case 2:
+						location.Y -= moveDelta;
+						if (location.Y > moveDetails.ParentBounds.Height) {
+							// We're done now; zero out to stop loop.
+							remainingDelta = SizeF.Empty;
+							moveDetails.MoveIndex += 1;
+						}
+						else {
+							remainingDelta = SizeF.Empty;
+						}
+						break;
+					default:
+						remainingDelta = SizeF.Empty;
+						break;
+					}
+					bounds.Location = location;
+					moveDetails.DeltaMovement = remainingDelta;
+					moveDetails.CurrentBounds = bounds;
+				}
+				return moveDetails;
+			};
+
+			var wordLabels = sampleText.Split (new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select (word => new MovableLabel (doSomeFunMoving) { Text = word, }).ToList ();
 			funkyAbsoluteLayout = new AbsoluteLayout ();
 			foreach (var wordLabel in wordLabels) {
 				funkyAbsoluteLayout.Children.Add (wordLabel);
@@ -88,8 +143,7 @@ namespace ScrollyFun
 						x = 0;
 					}
 					var newBounds = new Rectangle(new Point(x, y), wordLabel.Bounds.Size);
-					wordLabel.OriginalPosition = newBounds;
-					AbsoluteLayout.SetLayoutBounds(wordLabel, wordLabel.OriginalPosition);
+					AbsoluteLayout.SetLayoutBounds(wordLabel, newBounds);
 					x = newBounds.Right + wordSpacing;
 				}
 			};
@@ -100,15 +154,18 @@ namespace ScrollyFun
 				BackgroundColor = Color.Aqua,
 			};
 			touchesContentPage.OnPanned += (object sender, SizeF e) => {
-				var y = e.Height;
-				if (y > 0) {
-					// Swiping down: currently ignored.
-					return;
-				}
 				// TODO: Parallel.ForEach?
+				var parentBoundsWithoutPadding = touchesContentPage.Bounds;
+				parentBoundsWithoutPadding.Height -= touchesContentPage.Padding.Bottom + touchesContentPage.Padding.Top;
+				parentBoundsWithoutPadding.Width -= touchesContentPage.Padding.Right + touchesContentPage.Padding.Left;
 				foreach (var wordLabel in wordLabels) {
-					var newLocation = wordLabel.CalculateNewPosition(funkyAbsoluteLayout.Bounds, y);
-					AbsoluteLayout.SetLayoutBounds(wordLabel, new Rectangle(newLocation, wordLabel.Bounds.Size));
+					var moveDetails = new MoveDetails {
+						ParentBounds = parentBoundsWithoutPadding,
+						CurrentBounds = wordLabel.Bounds,
+						DeltaMovement = e,
+					};
+					var resultMoveDetails = wordLabel.CalculateNewPosition(moveDetails);
+					AbsoluteLayout.SetLayoutBounds(wordLabel, resultMoveDetails.CurrentBounds);
 				}
 			};
 			MainPage = touchesContentPage;
