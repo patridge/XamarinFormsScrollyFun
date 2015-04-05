@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<resources>
+	<style name="SomeStyles" parent="android:Theme.Holo">
+		<item name="android:textColor">#ff000000</item>
+	</style>
+</resources>

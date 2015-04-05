@@ -73,6 +73,22 @@ namespace ScrollyFun.Droid
 			{
 			}
 		}
+		
+		public partial class Style
+		{
+			
+			// aapt resource value: 0x7f040000
+			public const int SomeStyles = 2130968576;
+			
+			static Style()
+			{
+				global::Android.Runtime.ResourceIdManager.UpdateIdValues();
+			}
+			
+			private Style()
+			{
+			}
+		}
 	}
 }
 #pragma warning restore 1591
