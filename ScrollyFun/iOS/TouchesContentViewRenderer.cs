@@ -4,12 +4,12 @@ using Xamarin.Forms;
 using Xamarin.Forms.Platform.iOS;
 using UIKit;
 
-[assembly: ExportRenderer (typeof(ScrollyFun.TouchesContentPage), typeof(ScrollyFun.iOS.TouchesContentPageRenderer))]
+[assembly: ExportRenderer (typeof(ScrollyFun.TouchesContentView), typeof(ScrollyFun.iOS.TouchesContentViewRenderer))]
 namespace ScrollyFun.iOS
 {
-	public class TouchesContentPageRenderer : VisualElementRenderer<TouchesContentPage>
+	public class TouchesContentViewRenderer : VisualElementRenderer<TouchesContentView>
 	{
-		public TouchesContentPageRenderer() {
+		public TouchesContentViewRenderer() {
 			MultipleTouchEnabled = true;
 		}
 

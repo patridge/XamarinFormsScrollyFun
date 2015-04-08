@@ -10,8 +10,7 @@ namespace ScrollyFun
 		public object Id { get; set; }
 		public PointF Location { get; set; }
 	}
-	public class TouchesContentPage : ContentPage
-	{
+	public class TouchesContentView : ContentView {
 		readonly Dictionary<object, IdentifiedTouch> CurrentTouches = new Dictionary<object, IdentifiedTouch>();
 
 		public event EventHandler<SizeF> OnPanned;

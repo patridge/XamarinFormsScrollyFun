@@ -5,10 +5,10 @@ using Android.Views;
 using System.Linq;
 using View = Android.Views.View;
 
-[assembly: ExportRenderer (typeof(ScrollyFun.TouchesContentPage), typeof(ScrollyFun.Droid.TouchesContentPageRenderer))]
+[assembly: ExportRenderer (typeof(ScrollyFun.TouchesContentView), typeof(ScrollyFun.Droid.TouchesContentViewRenderer))]
 namespace ScrollyFun.Droid
 {
-	public class TouchesContentPageRenderer : VisualElementRenderer<TouchesContentPage>
+	public class TouchesContentViewRenderer : VisualElementRenderer<TouchesContentView>
 	{
 		public override bool OnTouchEvent (MotionEvent e)
 		{

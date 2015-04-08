@@ -3,6 +3,7 @@ using System.Linq;
 using System.Drawing;
 using Xamarin.Forms;
 using Color = Xamarin.Forms.Color;
+using Size = Xamarin.Forms.Size;
 using Point = Xamarin.Forms.Point;
 using Rectangle = Xamarin.Forms.Rectangle;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using ScrollyFun.Helpers;
 namespace ScrollyFun
 {
 	public class MoveDetails {
-		public Rectangle ParentBounds { get; set; }
+		public Rectangle ContainerBounds { get; set; }
 		public Rectangle CurrentBounds { get; set; }
 		public int MoveIndex { get; set; }
 		public SizeF DeltaMovement { get; set; }
@@ -81,21 +82,21 @@ namespace ScrollyFun
 					case 1:
 						var right = bounds.Right;
 						var left = bounds.Left;
-						var parentCenter = moveDetails.ParentBounds.Center.X;
+						var parentCenter = moveDetails.ContainerBounds.Center.X;
 						bool moveLeft = right < parentCenter || (parentCenter - left > right - parentCenter);
 						if (moveLeft) {
 							location.X += moveDelta;
 						} else {
 							location.X -= moveDelta;
 						}
-						if (location.X < 0 || location.X + width > moveDetails.ParentBounds.Right) {
+						if (location.X < 0 || location.X + width > moveDetails.ContainerBounds.Right) {
 							// Overshot destination; put the rest back; move on.
 							if (location.X < 0) {
 								remainingDelta.Height = (float)location.X;
 								location.X = 0;
 							} else {
-								remainingDelta.Height = (float)moveDetails.ParentBounds.Right - width - (float)location.X;
-								location.X = moveDetails.ParentBounds.Right - width;
+								remainingDelta.Height = (float)moveDetails.ContainerBounds.Right - width - (float)location.X;
+								location.X = moveDetails.ContainerBounds.Right - width;
 							}
 							moveDetails.DeltaMovement = remainingDelta;
 							moveDetails.MoveIndex += 1;
@@ -106,7 +107,7 @@ namespace ScrollyFun
 						break;
 					case 2:
 						location.Y -= moveDelta;
-						if (location.Y > moveDetails.ParentBounds.Height) {
+						if (location.Y > moveDetails.ContainerBounds.Height) {
 							// We're done now; zero out to stop loop.
 							remainingDelta = SizeF.Empty;
 							moveDetails.MoveIndex += 1;
@@ -140,7 +141,7 @@ namespace ScrollyFun
 			const double rowSpacing = 0;
 			const double columnSpacing = 0;
 			funkyAbsoluteLayout.SizeChanged += (sender, e) => {
-				// Lay out a bunch of text manually, because YOLO and such.
+				// Lay out a bunch of things manually, because YOLO and such.
 
 				// NOTE: assumes all items identical in this version.
 				var itemWidth = squares.First().Width;
@@ -161,18 +162,20 @@ namespace ScrollyFun
 				}
 			};
 
-			var touchesContentPage = new TouchesContentPage {
+			var touchesContentView = new TouchesContentView {
 				Content = funkyAbsoluteLayout,
-				Padding = new Thickness(0, Device.OnPlatform(iOS: 20, Android: 0, WinPhone: 0), 0, 0),
+				IsClippedToBounds = true,
 			};
-			touchesContentPage.OnPanned += (object sender, SizeF e) => {
+			var contentPage = new ContentPage {
+				Content = touchesContentView,
+				Padding = new Thickness(5, Device.OnPlatform(iOS: 20, Android: 0, WinPhone: 0), 5, 5),
+			};
+			touchesContentView.OnPanned += (object sender, SizeF e) => {
 				// TODO: Parallel.ForEach?
-				var parentBoundsWithoutPadding = touchesContentPage.Bounds;
-				parentBoundsWithoutPadding.Height -= touchesContentPage.Padding.Bottom + touchesContentPage.Padding.Top;
-				parentBoundsWithoutPadding.Width -= touchesContentPage.Padding.Right + touchesContentPage.Padding.Left;
+				var containerSize = funkyAbsoluteLayout.Bounds;
 				foreach (var square in squares) {
 					var moveDetails = new MoveDetails {
-						ParentBounds = parentBoundsWithoutPadding,
+						ContainerBounds = containerSize,
 						CurrentBounds = square.Bounds,
 						DeltaMovement = e,
 					};
@@ -180,7 +183,7 @@ namespace ScrollyFun
 					AbsoluteLayout.SetLayoutBounds(square, resultMoveDetails.CurrentBounds);
 				}
 			};
-			MainPage = touchesContentPage;
+			MainPage = contentPage;
 		}
 	}
 }
