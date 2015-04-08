@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using Color = Xamarin.Forms.Color;
 
 namespace ScrollyFun.Helpers {
