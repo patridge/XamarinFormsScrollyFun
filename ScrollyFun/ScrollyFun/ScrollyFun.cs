@@ -6,6 +6,7 @@ using Color = Xamarin.Forms.Color;
 using Point = Xamarin.Forms.Point;
 using Rectangle = Xamarin.Forms.Rectangle;
 using System.Collections.Generic;
+using ScrollyFun.Helpers;
 
 namespace ScrollyFun
 {
@@ -27,7 +28,7 @@ namespace ScrollyFun
 		// (once stacked, possibly recycle at end of text)
 		//}
 		// TODO: try flipping upside down and making lighter from top to "roll over and behind".
-		public class MovableLabel : Label {
+		public class MovableBoxView : BoxView {
 			int moveIndex = 0;
 
 			/// <summary>
@@ -37,7 +38,7 @@ namespace ScrollyFun
 				return moveDetails;
 			};
 
-			public MovableLabel(Func<MoveDetails, MoveDetails> mover) {
+			public MovableBoxView(Func<MoveDetails, MoveDetails> mover) {
 				Mover = mover ?? NoMove;
 			}
 			protected Func<MoveDetails, MoveDetails> Mover { get; set; }
@@ -49,11 +50,11 @@ namespace ScrollyFun
 			}
 		}
 
+		static Random rand = new Random ();
 		AbsoluteLayout funkyAbsoluteLayout;
 		public App ()
 		{
-			// Sample text from Treasure Island (Stevenson, 1894).
-			var sampleText = "SQUIRE TRELAWNEY, Dr. Livesey, and the rest of these gentlemen having asked me to write down the whole particulars about Treasure Island, from the beginning to the end, keeping nothing back but the bearings of the island, and that only because there is still treasure not yet lifted, I take up my pen in the year of grace 17__ and go back to the time when my father kept the Admiral Benbow inn and the brown old seaman with the sabre cut first took up his lodging under our roof.";
+			var squareCount = 100;
 			Func<MoveDetails, MoveDetails> doSomeFunMoving = (moveDetails) => {
 				double moveDelta = (moveDetails.DeltaMovement.Height < 0 ? moveDetails.DeltaMovement.Height : 0.0); // currently only move for up panning
 				Point location;
@@ -125,47 +126,58 @@ namespace ScrollyFun
 				return moveDetails;
 			};
 
-			var wordLabels = sampleText.Split (new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select (word => new MovableLabel (doSomeFunMoving) { Text = word, }).ToList ();
+			var squares = Enumerable.Range(0, squareCount).Select(boxIndex => {
+				return new MovableBoxView(doSomeFunMoving) {
+					WidthRequest = 35,
+					HeightRequest = 35,
+					Color = ColorHelpers.GetRandomColor(rand),
+				};
+			}).ToList();
 			funkyAbsoluteLayout = new AbsoluteLayout ();
-			foreach (var wordLabel in wordLabels) {
-				funkyAbsoluteLayout.Children.Add (wordLabel);
+			foreach (var square in squares) {
+				funkyAbsoluteLayout.Children.Add (square);
 			};
-			const double lineLeading = 3;
-			const double wordSpacing = 3;
+			const double rowSpacing = 0;
+			const double columnSpacing = 0;
 			funkyAbsoluteLayout.SizeChanged += (sender, e) => {
 				// Lay out a bunch of text manually, because YOLO and such.
-				double x = 0;
+
+				// NOTE: assumes all items identical in this version.
+				var itemWidth = squares.First().Width;
+				var itemsPerRow = (int)Math.Floor(funkyAbsoluteLayout.Bounds.Width / itemWidth);
+				var remainderSpace = funkyAbsoluteLayout.Bounds.Width - (itemsPerRow * itemWidth);
+				var xMargin = remainderSpace / 2;
+				double x = xMargin;
 				double y = 0;
-				foreach (var wordLabel in wordLabels) {
-					if (x + wordLabel.Bounds.Width > funkyAbsoluteLayout.Width) {
+				foreach (var square in squares) {
+					if (x + square.Bounds.Width > funkyAbsoluteLayout.Width) {
 						// NOTE: totally fails to wrap words longer than `funkyAbsoluteLayout.Width`.
-						y += wordLabel.Bounds.Height + lineLeading;
-						x = 0;
+						y += square.Bounds.Height + rowSpacing;
+						x = xMargin;
 					}
-					var newBounds = new Rectangle(new Point(x, y), wordLabel.Bounds.Size);
-					AbsoluteLayout.SetLayoutBounds(wordLabel, newBounds);
-					x = newBounds.Right + wordSpacing;
+					var newBounds = new Rectangle(new Point(x, y), square.Bounds.Size);
+					AbsoluteLayout.SetLayoutBounds(square, newBounds);
+					x = newBounds.Right + columnSpacing;
 				}
 			};
 
 			var touchesContentPage = new TouchesContentPage {
 				Content = funkyAbsoluteLayout,
-				Padding = new Thickness(5, Device.OnPlatform(iOS: 25, Android: 5, WinPhone: 5), 5, 5),
-				BackgroundColor = Color.Aqua,
+				Padding = new Thickness(0, Device.OnPlatform(iOS: 20, Android: 0, WinPhone: 0), 0, 0),
 			};
 			touchesContentPage.OnPanned += (object sender, SizeF e) => {
 				// TODO: Parallel.ForEach?
 				var parentBoundsWithoutPadding = touchesContentPage.Bounds;
 				parentBoundsWithoutPadding.Height -= touchesContentPage.Padding.Bottom + touchesContentPage.Padding.Top;
 				parentBoundsWithoutPadding.Width -= touchesContentPage.Padding.Right + touchesContentPage.Padding.Left;
-				foreach (var wordLabel in wordLabels) {
+				foreach (var square in squares) {
 					var moveDetails = new MoveDetails {
 						ParentBounds = parentBoundsWithoutPadding,
-						CurrentBounds = wordLabel.Bounds,
+						CurrentBounds = square.Bounds,
 						DeltaMovement = e,
 					};
-					var resultMoveDetails = wordLabel.CalculateNewPosition(moveDetails);
-					AbsoluteLayout.SetLayoutBounds(wordLabel, resultMoveDetails.CurrentBounds);
+					var resultMoveDetails = square.CalculateNewPosition(moveDetails);
+					AbsoluteLayout.SetLayoutBounds(square, resultMoveDetails.CurrentBounds);
 				}
 			};
 			MainPage = touchesContentPage;
