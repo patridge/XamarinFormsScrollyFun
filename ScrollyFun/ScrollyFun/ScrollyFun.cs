@@ -149,6 +149,7 @@ namespace ScrollyFun {
             const double columnSpacing = 0;
             funkyAbsoluteLayout.SizeChanged += (sender, e) => {
                 // Lay out a bunch of things manually, because YOLO and such.
+                // BUG: this will reset location of items on rotation without resetting the movement system.
 
                 // NOTE: assumes all items identical in this version.
                 var itemWidth = squares.First().Width;
