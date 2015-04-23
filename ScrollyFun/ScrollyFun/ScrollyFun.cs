@@ -144,7 +144,7 @@ namespace ScrollyFun {
             foreach (var square in squares) {
                 funkyAbsoluteLayout.Children.Add(square);
             }
-            ;
+
             const double rowSpacing = 0;
             const double columnSpacing = 0;
             funkyAbsoluteLayout.SizeChanged += (sender, e) => {
