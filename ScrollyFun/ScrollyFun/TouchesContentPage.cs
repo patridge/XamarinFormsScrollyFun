@@ -54,7 +54,7 @@ namespace ScrollyFun {
 
         public virtual void TouchesCancelled(IEnumerable<IdentifiedTouch> points) {
             foreach (var point in points) {
-                CurrentTouches.Remove(point);
+                CurrentTouches.Remove(point.Id);
             }
 
             if (OnTouchesCancelled != null) {
@@ -64,7 +64,7 @@ namespace ScrollyFun {
 
         public virtual void TouchesEnded(IEnumerable<IdentifiedTouch> points) {
             foreach (var point in points) {
-                CurrentTouches.Remove(point);
+                CurrentTouches.Remove(point.Id);
             }
 
             if (OnTouchesEnded != null) {
